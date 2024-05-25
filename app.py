@@ -42,7 +42,7 @@ def index():
                     interest: document.getElementById('interest').value
                 };
                 
-                fetch('http://your-ec2-server-ip:5002/submit', {
+                fetch('/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -77,15 +77,12 @@ def save_data(data):
 @app.route('/submit', methods=['POST'])
 def submit():
     data = request.get_json()
-    name = data['name']
-    email = data['email']
-    interest = data['interest']
     
     # 데이터를 저장합니다.
     save_data(data)
     
     # 데이터가 저장되는지 콘솔에 출력합니다.
-    print(f"Received data: Name={name}, Email={email}, Interest={interest}")
+    print(f"Received data: {json.dumps(data, indent=4)}")
 
     return jsonify({'status': 'success', 'data': data})
 
