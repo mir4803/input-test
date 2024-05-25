@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import json
 
 app = Flask(__name__)
 
@@ -37,7 +38,7 @@ def index():
                     interest: document.getElementById('interest').value
                 };
                 
-                fetch('http://15.165.180.185:5002/submit', {
+                fetch('http://your-ec2-server-ip:5002/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -57,6 +58,11 @@ def index():
     </html>
     """
 
+def save_data(data):
+    with open('data.json', 'a') as f:
+        json.dump(data, f)
+        f.write("\n")
+
 @app.route('/submit', methods=['POST'])
 def submit():
     data = request.get_json()
@@ -64,10 +70,18 @@ def submit():
     email = data['email']
     interest = data['interest']
     
-    # 여기서 데이터를 처리하거나 데이터베이스에 저장할 수 있습니다.
-    print(f"Received data: Name={name}, Email={email}, Interest={interest}")
+    # 데이터를 저장합니다.
+    save_data(data)
 
     return jsonify({'status': 'success', 'data': data})
+
+@app.route('/data', methods=['GET'])
+def get_data():
+    data = []
+    with open('data.json', 'r') as f:
+        for line in f:
+            data.append(json.loads(line))
+    return jsonify(data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)
