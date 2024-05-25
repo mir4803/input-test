@@ -37,7 +37,7 @@ def index():
                     interest: document.getElementById('interest').value
                 };
                 
-                fetch('http://your-ec2-server-ip:5002/submit', {
+                fetch('http://15.165.180.185:5002/submit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
