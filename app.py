@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import mysql.connector
 from mysql.connector import Error
+import json  # json 모듈 임포트
 
 app = Flask(__name__)
 
