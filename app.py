@@ -1,11 +1,42 @@
 from flask import Flask, request, jsonify
-import json
-import os
+import mysql.connector
+from mysql.connector import Error
 
 app = Flask(__name__)
 
-# 데이터 파일 경로 설정 (루트 디렉토리)
-DATA_FILE_PATH = os.path.join(os.path.dirname(__file__), 'data.json')
+# MySQL 연결 설정
+def create_connection():
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="flask_user",  # 여기에서 'flask_user'를 생성한 사용자 이름으로 변경하세요
+            password="your_password",  # 여기에서 'your_password'를 설정한 비밀번호로 변경하세요
+            database="flask_app"
+        )
+        if connection.is_connected():
+            print("Connected to MySQL database")
+    except Error as e:
+        print(f"The error '{e}' occurred")
+    return connection
+
+# 데이터베이스 테이블 생성 함수
+def create_table():
+    connection = create_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS submissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            email VARCHAR(100),
+            interest VARCHAR(255)
+        )
+    """)
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+create_table()
 
 @app.route('/')
 def index():
@@ -63,23 +94,23 @@ def index():
     """
 
 # 데이터 저장 함수
-def save_data(data):
-    if not os.path.exists(DATA_FILE_PATH) or os.stat(DATA_FILE_PATH).st_size == 0:
-        with open(DATA_FILE_PATH, 'w') as f:
-            json.dump([data], f, indent=4)
-    else:
-        with open(DATA_FILE_PATH, 'r+') as f:
-            file_data = json.load(f)
-            file_data.append(data)
-            f.seek(0)
-            json.dump(file_data, f, indent=4)
+def save_data_to_db(data):
+    connection = create_connection()
+    cursor = connection.cursor()
+    insert_query = """
+    INSERT INTO submissions (name, email, interest) VALUES (%s, %s, %s)
+    """
+    cursor.execute(insert_query, (data['name'], data['email'], data['interest']))
+    connection.commit()
+    cursor.close()
+    connection.close()
 
 @app.route('/submit', methods=['POST'])
 def submit():
     data = request.get_json()
     
     # 데이터를 저장합니다.
-    save_data(data)
+    save_data_to_db(data)
     
     # 데이터가 저장되는지 콘솔에 출력합니다.
     print(f"Received data: {json.dumps(data, indent=4)}")
@@ -89,9 +120,19 @@ def submit():
 @app.route('/data', methods=['GET'])
 def get_data():
     data = []
-    if os.path.exists(DATA_FILE_PATH) and os.stat(DATA_FILE_PATH).st_size != 0:
-        with open(DATA_FILE_PATH, 'r') as f:
-            data = json.load(f)
+    connection = create_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM submissions")
+    rows = cursor.fetchall()
+    for row in rows:
+        data.append({
+            "id": row[0],
+            "name": row[1],
+            "email": row[2],
+            "interest": row[3]
+        })
+    cursor.close()
+    connection.close()
     return jsonify(data)
 
 if __name__ == '__main__':
